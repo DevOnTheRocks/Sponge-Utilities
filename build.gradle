@@ -1,0 +1,18 @@
+group 'net.rebelcraft.utils'
+version '1.0.0'
+description = 'Rebelcraft.net Utility Plugin'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.5
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'sponge'
+        url = 'http://repo.spongepowered.org/maven'
+    }
+}
+dependencies {
+    compile 'org.spongepowered:spongeapi:5.0.0'
+}
