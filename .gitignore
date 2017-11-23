@@ -1,0 +1,13 @@
+/*
+!/.github/
+!/gradle/
+!/src/
+!/lib/
+!/.gitignore
+!/build.gradle
+!/gradlew*
+!/CHANGELOG*.md
+!/LICENSE.md
+!/README*.md
+!/settings.gradle
+!/gradle.properties

@@ -1,4 +1,4 @@
-package net.rebelcraft.utils.command;
+package rocks.gameonthe.sponge.command;
 
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;

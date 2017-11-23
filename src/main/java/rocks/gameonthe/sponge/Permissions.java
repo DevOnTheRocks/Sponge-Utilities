@@ -1,4 +1,4 @@
-package net.rebelcraft.utils;
+package rocks.gameonthe.sponge;
 
 public class Permissions {
 

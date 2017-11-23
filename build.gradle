@@ -1,18 +1,67 @@
-group 'net.rebelcraft.utils'
-version '1.0.0'
-description = 'Rebelcraft.net Utility Plugin'
+plugins {
+    id "java"
+    id "idea"
+    id "signing"
+    id "ninja.miserable.blossom" version "1.0.1"
+    id "org.spongepowered.plugin" version "0.6"
+    id 'com.qixalite.spongestart2' version '3.0.1'
+}
 
-apply plugin: 'java'
+group 'rocks.gameonthe.sponge'
+version "${major}.${minor}.${patch}"
+description = 'Game on the Rocks Sponge Utility Plugin.'
 
-sourceCompatibility = 1.5
+compileJava {
+    sourceCompatibility = targetCompatibility = "1.8"
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
 
 repositories {
-    mavenCentral()
+    jcenter()
     maven {
-        name = 'sponge'
-        url = 'http://repo.spongepowered.org/maven'
+        name = "Sponge"
+        url = "http://repo.spongepowered.org/maven"
+    }
+    maven {
+        name = "Forge"
+        url = "http://files.minecraftforge.net/maven"
+    }
+    maven {
+        name = "Nucleus"
+        url = "http://repo.drnaylor.co.uk/artifactory/list/minecraft"
+    }
+    maven {
+        name "LuckPerms"
+        url "https://repo.lucko.me/"
     }
 }
+
 dependencies {
-    compile 'org.spongepowered:spongeapi:5.0.0'
+    compile("org.spongepowered:spongeapi:${spongeapi}")
+    compile("me.ryanhamshire:griefprevention:${griefprevention}:api")
+    compile("io.github.nucleuspowered:nucleus-api:${nucleus}")
+    compile("me.lucko.luckperms:luckperms-api:${luckperms}")
+}
+
+blossom {
+    def pluginInfo = "src/main/java/rocks/gameonthe/sponge/PluginInfo.java"
+
+    replaceToken "@NAME@", project.name, pluginInfo
+    replaceToken "@VERSION@", project.version, pluginInfo
+    replaceToken "@DESCRIPTION@", project.description, pluginInfo
+
+    replaceToken "@GRIEFPREVENTION@", {griefprevention}, pluginInfo
+    replaceToken "@NUCLEUS@", {nucleus}, pluginInfo
+    replaceToken "@LUCKPERMS@", {luckperms}, pluginInfo
+}
+
+spongestart {
+    online 'false'
+    minecraft "1.10.2"
+    type "stable"
+    spongeForge properties.spongeforge
+    forgeServerFolder "run/API5/"
 }
