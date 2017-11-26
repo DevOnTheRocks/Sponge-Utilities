@@ -17,7 +17,6 @@ import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.filter.Getter;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GamePostInitializationEvent;
@@ -115,11 +114,11 @@ public class GameOnTheRocks {
     logger.info("Set default GP flags in {}.", world.getName());
     Claim wilderness = cm.getWildernessClaim();
     wilderness.setPermission(ClaimFlag.BLOCK_PLACE, "gravestone:any", Tristate.TRUE,
-        wilderness.getOverrideContext(), getCause());
+        wilderness.getOverrideContext());
     wilderness.setPermission(ClaimFlag.BLOCK_PLACE, "tombmanygraves:any", Tristate.TRUE,
-        wilderness.getOverrideContext(), getCause());
+        wilderness.getOverrideContext());
     wilderness.setPermission(ClaimFlag.BLOCK_PLACE, "graves:any", Tristate.TRUE,
-        wilderness.getOverrideContext(), getCause());
+        wilderness.getOverrideContext());
 
     // Spawn claim
     if (defaultWorld && !cm.getClaimAt(world.getSpawnLocation()).isAdminClaim()) {
@@ -136,16 +135,13 @@ public class GameOnTheRocks {
         switch (result.getResultType()) {
           case CLAIM_ALREADY_EXISTS:
           case OVERLAPPING_CLAIM:
-            result.getClaims().forEach(c -> cm.deleteClaim(c, getCause()));
+            result.getClaims().forEach(cm::deleteClaim);
             break;
           case SUCCESS:
             Claim claim = result.getClaim().get();
-            claim.setPermission(ClaimFlag.ENTITY_SPAWN, Tristate.FALSE, claim.getContext(),
-                getCause());
-            claim.setPermission(ClaimFlag.ENTITY_DAMAGE, Tristate.FALSE, claim.getContext(),
-                getCause());
-            claim.setPermission(ClaimFlag.PORTAL_USE, Tristate.TRUE, claim.getContext(),
-                getCause());
+            claim.setPermission(ClaimFlag.ENTITY_SPAWN, Tristate.FALSE, claim.getContext());
+            claim.setPermission(ClaimFlag.ENTITY_DAMAGE, Tristate.FALSE, claim.getContext());
+            claim.setPermission(ClaimFlag.PORTAL_USE, Tristate.TRUE, claim.getContext());
             logger.info("Successfully created spawn claim.");
             break;
           default:
@@ -178,9 +174,5 @@ public class GameOnTheRocks {
         .permission(Permissions.COMMAND_REGISTER)
         .executor(new CommandRegister())
         .build(), "register");
-  }
-
-  public Cause getCause() {
-    return Cause.source(pluginContainer).build();
   }
 }

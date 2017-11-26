@@ -8,7 +8,7 @@ plugins {
 }
 
 group 'rocks.gameonthe.sponge'
-version "${major}.${minor}.${patch}"
+version "${major}.${minor}.${patch}-${api}"
 description = 'Game on the Rocks Sponge Utility Plugin.'
 
 compileJava {
