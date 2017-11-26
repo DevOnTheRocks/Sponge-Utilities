@@ -9,10 +9,10 @@ import org.spongepowered.api.text.Text;
 
 public class CommandHelp implements CommandExecutor {
 
-	@Override
-	public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
-		src.sendMessage(Text.of("RebelUtilies Help: Nothing to see here!"));
-		return CommandResult.success();
-	}
+  @Override
+  public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
+    src.sendMessage(Text.of("RebelUtilies Help: Nothing to see here!"));
+    return CommandResult.success();
+  }
 
 }
