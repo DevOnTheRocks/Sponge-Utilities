@@ -1,8 +1,10 @@
 package rocks.gameonthe.sponge;
 
 import com.flowpowered.math.vector.Vector3i;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import java.util.List;
 import java.util.Set;
 import me.lucko.luckperms.LuckPerms;
 import me.lucko.luckperms.api.LuckPermsApi;
@@ -26,6 +28,7 @@ import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.plugin.Dependency;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
+import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.World;
@@ -41,7 +44,7 @@ import rocks.gameonthe.sponge.command.CommandRegister;
     description = PluginInfo.DESCRIPTION,
     dependencies = {
         @Dependency(id = "griefprevention", version = PluginInfo.GRIEFPREVENTION),
-        @Dependency(id = "nucleus", version = PluginInfo.NUCLEUS),
+        //@Dependency(id = "nucleus", version = PluginInfo.NUCLEUS),
         @Dependency(id = "luckperms", version = PluginInfo.LUCKPERMS)
     })
 public class GameOnTheRocks {
@@ -113,12 +116,13 @@ public class GameOnTheRocks {
     // Set GP Flags
     logger.info("Set default GP flags in {}.", world.getName());
     Claim wilderness = cm.getWildernessClaim();
-    wilderness.setPermission(ClaimFlag.BLOCK_PLACE, "gravestone:any", Tristate.TRUE,
-        wilderness.getOverrideContext());
-    wilderness.setPermission(ClaimFlag.BLOCK_PLACE, "tombmanygraves:any", Tristate.TRUE,
-        wilderness.getOverrideContext());
-    wilderness.setPermission(ClaimFlag.BLOCK_PLACE, "graves:any", Tristate.TRUE,
-        wilderness.getOverrideContext());
+    Context context = wilderness.getOverrideContext();
+    List<String> gravestones = Lists
+        .newArrayList("gravestone:any", "tombmanygraves:any", "graves:any");
+    gravestones.forEach(g -> {
+      wilderness.setPermission(ClaimFlag.BLOCK_PLACE, g, Tristate.TRUE, context);
+      wilderness.setPermission(ClaimFlag.BLOCK_BREAK, g, Tristate.TRUE, context);
+    });
 
     // Spawn claim
     if (defaultWorld && !cm.getClaimAt(world.getSpawnLocation()).isAdminClaim()) {
