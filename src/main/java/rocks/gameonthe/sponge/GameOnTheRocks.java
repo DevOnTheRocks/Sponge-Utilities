@@ -35,6 +35,7 @@ import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
 import rocks.gameonthe.sponge.command.CommandHelp;
 import rocks.gameonthe.sponge.command.CommandRegister;
+import rocks.gameonthe.sponge.listener.NatureCoreHandler;
 
 @Plugin(
     id = PluginInfo.ID,
@@ -56,7 +57,6 @@ public class GameOnTheRocks {
     return this.logger;
   }
 
-
   @Inject
   PluginContainer pluginContainer;
 
@@ -75,6 +75,10 @@ public class GameOnTheRocks {
   @Listener
   public void onServerAboutToStart(GameAboutToStartServerEvent event) {
     // registerCommands();
+    if (Sponge.getPluginManager().isLoaded("randomthings")) {
+      Sponge.getEventManager().registerListeners(this, new NatureCoreHandler(griefPrevention));
+      getLogger().info("Nature Core Fix Enabled.");
+    }
     getLogger().info("Initialization complete.");
   }
 
@@ -96,11 +100,7 @@ public class GameOnTheRocks {
     // For new worlds only
     if (newWorlds.contains(properties)) {
       // Set world spawn
-      int y = world.getExtentView(
-          Vector3i.from(0, 0, 0),
-          Vector3i.from(0, 255, 0)
-      ).getBlockMax().getY();
-      properties.setSpawnPosition(Vector3i.from(0, y, 0));
+      properties.setSpawnPosition(Vector3i.from(0, world.getHighestYAt(0, 0), 0));
     }
 
     // Set Game Rules
