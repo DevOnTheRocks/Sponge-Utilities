@@ -60,8 +60,8 @@ blossom {
 
 spongestart {
     online 'false'
-    minecraft "1.10.2"
+    minecraft "1.12.2"
     type "stable"
     spongeForge properties.spongeforge
-    forgeServerFolder "run/API5/"
+    forgeServerFolder "run/API7/"
 }
