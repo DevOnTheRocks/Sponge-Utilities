@@ -4,6 +4,7 @@ import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import me.lucko.luckperms.LuckPerms;
@@ -15,13 +16,19 @@ import me.ryanhamshire.griefprevention.api.claim.ClaimFlag;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
 import me.ryanhamshire.griefprevention.api.claim.ClaimResult;
 import me.ryanhamshire.griefprevention.api.claim.ClaimType;
+import ninja.leaping.configurate.commented.CommentedConfigurationNode;
+import ninja.leaping.configurate.loader.ConfigurationLoader;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.command.spec.CommandSpec;
+import org.spongepowered.api.config.ConfigDir;
+import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.filter.Getter;
+import org.spongepowered.api.event.game.GameReloadEvent;
 import org.spongepowered.api.event.game.state.GameAboutToStartServerEvent;
 import org.spongepowered.api.event.game.state.GamePostInitializationEvent;
+import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.event.world.ConstructWorldPropertiesEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
@@ -33,9 +40,11 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
-import rocks.gameonthe.sponge.command.CommandHelp;
-import rocks.gameonthe.sponge.command.CommandRegister;
-import rocks.gameonthe.sponge.listener.NatureCoreHandler;
+import rocks.gameonthe.sponge.command.CommandRetirement;
+import rocks.gameonthe.sponge.config.ConfigManager;
+import rocks.gameonthe.sponge.config.GlobalConfig;
+import rocks.gameonthe.sponge.listener.CreativeBlockHandler;
+import rocks.gameonthe.sponge.listener.ServerRetirementHandler;
 
 @Plugin(
     id = PluginInfo.ID,
@@ -45,7 +54,7 @@ import rocks.gameonthe.sponge.listener.NatureCoreHandler;
     description = PluginInfo.DESCRIPTION,
     dependencies = {
         @Dependency(id = "griefprevention", version = PluginInfo.GRIEFPREVENTION),
-        //@Dependency(id = "nucleus", version = PluginInfo.NUCLEUS),
+        @Dependency(id = "nucleus", version = PluginInfo.NUCLEUS),
         @Dependency(id = "luckperms", version = PluginInfo.LUCKPERMS)
     })
 public class GameOnTheRocks {
@@ -58,7 +67,20 @@ public class GameOnTheRocks {
   }
 
   @Inject
-  PluginContainer pluginContainer;
+  private PluginContainer pluginContainer;
+
+  public Cause getCause() {
+    return Cause.source(pluginContainer).build();
+  }
+
+  @Inject
+  @ConfigDir(sharedRoot = true)
+  private Path configDir;
+  @Inject
+  @DefaultConfig(sharedRoot = true)
+  private ConfigurationLoader<CommentedConfigurationNode> configLoader;
+  private ConfigManager configManager;
+  private GlobalConfig config;
 
   private GriefPreventionApi griefPrevention;
   private LuckPermsApi luckPerms;
@@ -66,20 +88,69 @@ public class GameOnTheRocks {
   private Set<WorldProperties> newWorlds = Sets.newHashSet();
 
   @Listener
-  public void onPostInitialization(GamePostInitializationEvent event) {
+  public void onPreInitialization(GamePreInitializationEvent event) {
     getLogger().info("Plugin has begun initialization.");
+
+    config = new GlobalConfig();
+    configManager = new ConfigManager(this);
+    configManager.save();
+  }
+
+  @Listener
+  public void onPostInitialization(GamePostInitializationEvent event) {
     griefPrevention = GriefPrevention.getApi();
     luckPerms = LuckPerms.getApi();
   }
 
   @Listener
   public void onServerAboutToStart(GameAboutToStartServerEvent event) {
-    // registerCommands();
-    if (Sponge.getPluginManager().isLoaded("randomthings")) {
-      Sponge.getEventManager().registerListeners(this, new NatureCoreHandler(griefPrevention));
-      getLogger().info("Nature Core Fix Enabled.");
-    }
+    registerListeners();
+    registerCommands();
+
     getLogger().info("Initialization complete.");
+  }
+
+  private void registerListeners() {
+    if (config.getCreativeBlock().isEnabled()) {
+      Sponge.getEventManager().registerListeners(this, new CreativeBlockHandler(this));
+      getLogger().info("Creative Block Helper Enabled.");
+    }
+    if (config.getServerRetirement().isEnabled()) {
+      Sponge.getEventManager().registerListeners(this, new ServerRetirementHandler(this));
+      getLogger().info("Server Retirement Enabled.");
+    }
+  }
+
+  private void registerCommands() {
+    new CommandRetirement(this);
+
+//    Sponge.getCommandManager().register(this, CommandSpec.builder()
+//        .description(Text.of("Help Command"))
+//        .permission(Permissions.COMMAND_HELP)
+//        .executor(new CommandHelp())
+//        .build(), "gotrhelp");
+//
+//    Sponge.getCommandManager().register(this, CommandSpec.builder()
+//        .description(Text.of("Allows you to register"))
+//        .permission(Permissions.COMMAND_REGISTER)
+//        .executor(new CommandRegister())
+//        .build(), "register");
+  }
+
+  @Listener
+  public void reload(GameReloadEvent event) {
+    reload();
+  }
+
+  public void reload() {
+    // Load Plugin Config
+    configManager.load();
+    // Reload Listeners
+    Sponge.getEventManager().unregisterPluginListeners(this);
+    registerListeners();
+    // Reload Commands
+    Sponge.getCommandManager().getOwnedBy(this).forEach(Sponge.getCommandManager()::removeMapping);
+    registerCommands();
   }
 
   @Listener
@@ -100,7 +171,11 @@ public class GameOnTheRocks {
     // For new worlds only
     if (newWorlds.contains(properties)) {
       // Set world spawn
-      properties.setSpawnPosition(Vector3i.from(0, world.getHighestYAt(0, 0), 0));
+      int y = world.getExtentView(
+          Vector3i.from(0, 0, 0),
+          Vector3i.from(0, 255, 0)
+      ).getBlockMax().getY();
+      properties.setSpawnPosition(Vector3i.from(0, y, 0));
     }
 
     // Set Game Rules
@@ -119,9 +194,13 @@ public class GameOnTheRocks {
     Context context = wilderness.getOverrideContext();
     List<String> gravestones = Lists
         .newArrayList("gravestone:any", "tombmanygraves:any", "graves:any");
+    List<ClaimFlag> flags = Lists
+        .newArrayList(ClaimFlag.BLOCK_PLACE, ClaimFlag.BLOCK_BREAK,
+            ClaimFlag.INTERACT_BLOCK_SECONDARY);
     gravestones.forEach(g -> {
-      wilderness.setPermission(ClaimFlag.BLOCK_PLACE, g, Tristate.TRUE, context);
-      wilderness.setPermission(ClaimFlag.BLOCK_BREAK, g, Tristate.TRUE, context);
+      wilderness.setPermission(ClaimFlag.BLOCK_PLACE, g, Tristate.TRUE, context, getCause());
+      wilderness.setPermission(ClaimFlag.BLOCK_BREAK, g, Tristate.TRUE, context, getCause());
+      wilderness.setPermission(ClaimFlag.INTERACT_BLOCK_SECONDARY, Tristate.TRUE, context, getCause());
     });
 
     // Spawn claim
@@ -135,17 +214,18 @@ public class GameOnTheRocks {
                 Vector3i.from(512, 0, 512),
                 Vector3i.from(-512, 255, -512)
             )
+            .cause(getCause())
             .build();
         switch (result.getResultType()) {
           case CLAIM_ALREADY_EXISTS:
           case OVERLAPPING_CLAIM:
-            result.getClaims().forEach(cm::deleteClaim);
+            result.getClaims().forEach(c -> cm.deleteClaim(c, getCause()));
             break;
           case SUCCESS:
             Claim claim = result.getClaim().get();
-            claim.setPermission(ClaimFlag.ENTITY_SPAWN, Tristate.FALSE, claim.getContext());
-            claim.setPermission(ClaimFlag.ENTITY_DAMAGE, Tristate.FALSE, claim.getContext());
-            claim.setPermission(ClaimFlag.PORTAL_USE, Tristate.TRUE, claim.getContext());
+            claim.setPermission(ClaimFlag.ENTITY_SPAWN, Tristate.FALSE, claim.getContext(), getCause());
+            claim.setPermission(ClaimFlag.ENTITY_DAMAGE, Tristate.FALSE, claim.getContext(), getCause());
+            claim.setPermission(ClaimFlag.PORTAL_USE, Tristate.TRUE, claim.getContext(), getCause());
             logger.info("Successfully created spawn claim.");
             break;
           default:
@@ -166,17 +246,19 @@ public class GameOnTheRocks {
     getLogger().info("Shutdown actions complete.");
   }
 
-  public void registerCommands() {
-    Sponge.getCommandManager().register(this, CommandSpec.builder()
-        .description(Text.of("Help Command"))
-        .permission(Permissions.COMMAND_HELP)
-        .executor(new CommandHelp())
-        .build(), "gotrhelp");
+  public GlobalConfig getConfig() {
+    return config;
+  }
 
-    Sponge.getCommandManager().register(this, CommandSpec.builder()
-        .description(Text.of("Allows you to register"))
-        .permission(Permissions.COMMAND_REGISTER)
-        .executor(new CommandRegister())
-        .build(), "register");
+  public ConfigurationLoader<CommentedConfigurationNode> getConfigLoader() {
+    return configLoader;
+  }
+
+  public ConfigManager getConfigManager() {
+    return configManager;
+  }
+
+  public GriefPreventionApi getGriefPrevention() {
+    return griefPrevention;
   }
 }

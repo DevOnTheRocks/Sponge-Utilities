@@ -61,6 +61,7 @@ blossom {
 spongestart {
     online 'false'
     minecraft "1.10.2"
+    forge "12.18.3.2511"
     type "stable"
     spongeForge properties.spongeforge
     forgeServerFolder "run/API5/"
