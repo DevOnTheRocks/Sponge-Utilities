@@ -1,20 +1,23 @@
 package rocks.gameonthe.sponge.listener;
 
-import com.google.common.collect.Lists;
 import java.util.List;
 import me.ryanhamshire.griefprevention.api.claim.Claim;
 import me.ryanhamshire.griefprevention.api.claim.ClaimManager;
 import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.transaction.InventoryTransactionResult.Type;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 import rocks.gameonthe.sponge.GameOnTheRocks;
@@ -22,19 +25,38 @@ import rocks.gameonthe.sponge.GameOnTheRocks;
 public class CreativeBlockHandler {
 
   private final GameOnTheRocks plugin;
-  private final List<String> creativeBlocks = Lists.newArrayList("randomthings:naturecore");
+  private final List<BlockType> blocks;
 
   public CreativeBlockHandler(GameOnTheRocks plugin) {
     this.plugin = plugin;
+    this.blocks = plugin.getConfig().getCreativeBlock().getBlocks();
+  }
+
+  @Listener
+  public void onPlaceBlock(ChangeBlockEvent.Place event, @First Player player) {
+    event.getTransactions().stream()
+        .filter(t -> t.isValid() &&
+            blocks.contains(t.getFinal().getState().getType())
+        )
+        .forEach(t -> {
+          BlockState state = t.getFinal().getState();
+          player.sendMessage(Text.of(
+              "To remove this ",
+              Text.builder(state.getName())
+                  .onHover(TextActions.showItem(
+                      ItemStack.builder().fromBlockState(state).build().createSnapshot()
+                  )),
+              " right-click it with an empty hand."
+          ));
+        });
   }
 
   @Listener
   public void onInteractBlock(InteractBlockEvent.Secondary event, @First Player player) {
-    // Check if the target is a Nature Core and if the player's hand is empty
+    // Check if the target is configured and if the player's hand is empty
     if (event.getTargetBlock().getLocation().isPresent()
         && !player.getItemInHand(event.getHandType()).isPresent()
-        && plugin.getConfig().getCreativeBlock().getBlocks()
-        .contains(event.getTargetBlock().getState().getType())
+        && blocks.contains(event.getTargetBlock().getState().getType())
         ) {
 
       Location<World> location = event.getTargetBlock().getLocation().get();

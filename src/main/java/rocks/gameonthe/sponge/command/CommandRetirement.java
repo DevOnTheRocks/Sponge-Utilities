@@ -13,6 +13,8 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.action.TextActions;
+import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.annotation.NonnullByDefault;
 import rocks.gameonthe.sponge.GameOnTheRocks;
 import rocks.gameonthe.sponge.Permissions;
@@ -26,7 +28,7 @@ public class CommandRetirement implements CommandExecutor {
   private final Text PHASE = Text.of("phase");
   private final Text DATE = Text.of("date");
 
-  private enum PHASES {
+  private enum Phase {
     ONE, TWO
   }
 
@@ -40,7 +42,7 @@ public class CommandRetirement implements CommandExecutor {
         .arguments(
             GenericArguments.optionalWeak(GenericArguments.bool(ENABLE)),
             GenericArguments.optional(GenericArguments.seq(
-                GenericArguments.enumValue(PHASE, PHASES.class),
+                GenericArguments.enumValue(PHASE, Phase.class),
                 Arguments.dateTime(DATE)
             ))
         )
@@ -60,7 +62,7 @@ public class CommandRetirement implements CommandExecutor {
           Text.of("Server retirement ", config.isEnabled() ? "ENABLED" : "DISABLED", "."));
       plugin.getConfigManager().save();
     } else if (args.hasAny(PHASE) && args.hasAny(DATE)) {
-      PHASES phase = args.<PHASES>getOne(PHASE).get();
+      Phase phase = args.<Phase>getOne(PHASE).get();
       Instant instant = args.<LocalDateTime>getOne(DATE).get().toInstant(ZoneOffset.UTC);
       switch (phase) {
         case ONE:
@@ -74,6 +76,18 @@ public class CommandRetirement implements CommandExecutor {
           "Server retirement phase ", phase, " set to ", instant, "."
       ));
       plugin.getConfigManager().save();
+
+      src.sendMessage(Text.of(
+          "Do you want to reload the now?", Text.NEW_LINE,
+          Text.of(TextColors.WHITE, "[", TextColors.GREEN, "Yes", TextColors.WHITE, "]")
+              .toBuilder()
+              .onHover(TextActions.showText(Text.of("Click to reload")))
+              .onClick(TextActions.executeCallback(plugin::reload)),
+          " ",
+          Text.of(TextColors.WHITE, "[", TextColors.RED, "No", TextColors.WHITE, "]")
+              .toBuilder()
+              .onHover(TextActions.showText(Text.of("Click to cancel")))
+      ));
     } else {
       PaginationList.builder()
           .title(Text.of("Server Retirement"))
