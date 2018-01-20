@@ -20,6 +20,7 @@ import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
@@ -36,9 +37,12 @@ import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.service.context.Context;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.storage.WorldProperties;
+import rocks.gameonthe.sponge.command.CommandBlockHelper;
+import rocks.gameonthe.sponge.command.CommandReload;
 import rocks.gameonthe.sponge.command.CommandRetirement;
 import rocks.gameonthe.sponge.config.ConfigManager;
 import rocks.gameonthe.sponge.config.GlobalConfig;
@@ -117,6 +121,8 @@ public class GameOnTheRocks {
   }
 
   private void registerCommands() {
+    new CommandBlockHelper(this);
+    new CommandReload(this);
     new CommandRetirement(this);
 
 //    Sponge.getCommandManager().register(this, CommandSpec.builder()
@@ -135,6 +141,11 @@ public class GameOnTheRocks {
   @Listener
   public void reload(GameReloadEvent event) {
     reload();
+  }
+
+  public void reload(CommandSource src) {
+    reload();
+    src.sendMessage(Text.of(TextColors.GREEN, "Successfully reloaded ", PluginInfo.NAME, "."));
   }
 
   public void reload() {
@@ -255,4 +266,5 @@ public class GameOnTheRocks {
   public GriefPreventionApi getGriefPrevention() {
     return griefPrevention;
   }
+
 }
